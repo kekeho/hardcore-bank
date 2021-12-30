@@ -5,3 +5,11 @@
 ## status
 
 他ブランチで開発中
+
+## build
+
+```sh
+pipenv install
+pipenv shell
+brownie pm install OpenZeppelin/openzeppelin-contracts@4.4.1
+```
