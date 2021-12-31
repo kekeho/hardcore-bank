@@ -1,5 +1,7 @@
 from brownie import accounts
-from brownie import HardcoreBank
+from brownie import HardcoreBank, SampleToken
+from brownie import convert
+import brownie
 
 
 def test_createAccount_getAccount(deploy_erc1820_register):
@@ -15,6 +17,8 @@ def test_createAccount_getAccount(deploy_erc1820_register):
     config_list = c.getAccounts({'from': accounts[1]})
 
     assert len(config_list) == 1
+    assert c.isOwner(0, {'from': accounts[1]})
+    assert c.isOwner(0, {'from': accounts[0]}) == False
 
     config_head = config_list[0]
 
@@ -86,3 +90,47 @@ def test_disable(deploy_erc1820_register):
     accounts_list = c.getAccounts({'from': accounts[0]})
     assert len(accounts_list) == 2
     assert name[1] not in [a[1] for a in accounts_list]
+
+
+def test_tokenReceived(deploy_erc1820_register):
+    st = SampleToken.deploy({'from': accounts[0]})
+    c = HardcoreBank.deploy({'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+
+    id = 0
+    amount = 1e10
+    st.send(c.address, amount, convert.to_bytes(id), {'from': accounts[0]})
+
+    recv = c.tokensRecvList(id, {'from': accounts[1]})[0]
+    assert recv[0] == accounts[0]
+    assert recv[1] == amount
+
+
+def test_tokenReceived_fail(deploy_erc1820_register):
+    st = SampleToken.deploy({'from': accounts[0]})
+    c = HardcoreBank.deploy({'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+
+    id = 99999  # doesn't exists
+    amount = 1e10
+    with brownie.reverts():
+        st.send(c.address, amount, convert.to_bytes(id), {'from': accounts[0]})
+
+    with brownie.reverts():
+        c.tokensRecvList(id, {'from': accounts[1]})
+
+    assert len(c.tokensRecvList(0, {'from': accounts[1]})) == 0

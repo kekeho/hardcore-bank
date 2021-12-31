@@ -8,8 +8,8 @@ def test_init_owner(deploy_erc1820_register):
     c = HardcoreBank.deploy({'from': accounts[0]})
 
     # owner check
-    assert c.isOwner({'from': accounts[0]}) == True
-    assert c.isOwner({'from': accounts[1]}) == False
+    assert c.isGrandOwner({'from': accounts[0]}) == True
+    assert c.isGrandOwner({'from': accounts[1]}) == False
  
 def test_init_registory(deploy_erc1820_register):
     c = HardcoreBank.deploy({'from': accounts[0]})

@@ -1,6 +1,6 @@
 import pytest
 from brownie import accounts, web3
-
+from brownie import SampleToken
 
 @pytest.fixture(scope='session')
 def deploy_erc1820_register():

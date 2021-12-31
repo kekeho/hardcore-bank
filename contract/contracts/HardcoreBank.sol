@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 import "OpenZeppelin/openzeppelin-contracts@4.4.1/contracts/utils/math/SafeMath.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.4.1/contracts/token/ERC777/ERC777.sol";
 
+import "contracts/Utils.sol";
+
+
 struct Config {
     address owner;  // creator of bank
     string subject;  // name of piggybank
@@ -15,6 +18,14 @@ struct Config {
     bool disabled;
 }
 
+
+struct RecvTransaction {
+    address from;
+    uint256 amount;
+    uint256 timestamp;
+}
+
+
 contract HardcoreBank is IERC777Recipient {
     using SafeMath for uint256;
 
@@ -23,8 +34,11 @@ contract HardcoreBank is IERC777Recipient {
     uint256 constant private _decimal = 18;
     IERC1820Registry private _erc1820Registry = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
-    mapping(address => Config[]) private accountList;
-    mapping(address => uint256) public activeCount;
+    mapping(uint256 => Config) private accountList;  // ID => account
+    mapping(address => uint256[]) private userAccountList;  // user adderss => ID list
+    uint256 private nextID = 0;
+
+    mapping(uint256 => RecvTransaction[]) private recvList;  // ID => RecvTransaction
 
     constructor() {
         // set owner;
@@ -35,21 +49,29 @@ contract HardcoreBank is IERC777Recipient {
     }
 
     function createAccount(string calldata subject, string calldata description, address token, uint256 targetAmount, uint256 monthlyRemittrance) public {
-        accountList[msg.sender].push(
-            Config(msg.sender, subject, description, token, targetAmount, monthlyRemittrance, false)
-        );
-        activeCount[msg.sender] = activeCount[msg.sender].add(1);
+        accountList[nextID] = Config(msg.sender, subject, description, token, targetAmount, monthlyRemittrance, false);
+        userAccountList[msg.sender].push(nextID);
+        nextID = nextID.add(1);
     }
 
     function getAccounts() public view returns (Config[] memory) {
-        Config[] memory result = new Config[](activeCount[msg.sender]);
+        // count length
+        uint256 active_length = 0;
+        for (uint256 i = 0; i < userAccountList[msg.sender].length; i=i.add(1)) {
+            uint256 id = userAccountList[msg.sender][i];
+            if (accountList[id].disabled == false) {
+                active_length = active_length.add(1);
+            }
+        }
 
-        uint256 result_i = 0;
-        for (uint256 i = 0; i < accountList[msg.sender].length; i=i.add(1)) {
+        Config[] memory result = new Config[](active_length);
+        uint256 result_id = 0;
+        for (uint256 i = 0; i < userAccountList[msg.sender].length; i=i.add(1)) {
+            uint256 id = userAccountList[msg.sender][i];
             // pass disabled
-            if (accountList[msg.sender][i].disabled == false) {
-                result[result_i] = accountList[msg.sender][i];
-                result_i = result_i.add(1);
+            if (accountList[id].disabled == false) {
+                result[result_id] = accountList[id];
+                result_id = result_id.add(1);
             }
         }
 
@@ -57,19 +79,37 @@ contract HardcoreBank is IERC777Recipient {
     }
 
     function disable(uint256 id) public {
-        require(id < accountList[msg.sender].length);
-        require(accountList[msg.sender][id].disabled == false);
+        require(id < nextID);
+        require(accountList[id].disabled == false);
+        require(accountList[id].owner == msg.sender);
 
-        accountList[msg.sender][id].disabled = true;
-        activeCount[msg.sender] = activeCount[msg.sender].sub(1);
+        accountList[id].disabled = true;
     }
 
-    function isOwner() public view returns (bool) {
+    function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata data, bytes calldata operatorData) external {
+        uint256 id = toUint256(data);
+        require(id < nextID);
+        require(accountList[id].disabled == false);
+        require(to == address(this));
+        require(msg.sender == accountList[id].tokenContractAddress);
+
+        recvList[id].push(
+            RecvTransaction(from, amount, block.timestamp)
+        );
+    }
+
+    function tokensRecvList(uint256 id) public view returns (RecvTransaction[] memory) {
+        require(isOwner(id));
+        return recvList[id];
+    }
+
+    function isOwner(uint256 id) public view returns (bool) {
+        require(id < nextID);
+        return accountList[id].owner == msg.sender;
+    }
+
+    function isGrandOwner() public view returns (bool) {
         return msg.sender == _owner;
-    }
-
-    function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata userData, bytes calldata operatorData) external {
-        // TODO: write receiver
     }
 }
 
