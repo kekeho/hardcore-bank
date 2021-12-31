@@ -12,4 +12,5 @@
 pipenv install
 pipenv shell
 brownie pm install OpenZeppelin/openzeppelin-contracts@4.4.1
+brownie pm install kekeho/BokkyPooBahsDateTimeLibrary@1.02
 ```

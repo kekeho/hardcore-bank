@@ -134,3 +134,25 @@ def test_tokenReceived_fail(deploy_erc1820_register):
         c.tokensRecvList(id, {'from': accounts[1]})
 
     assert len(c.tokensRecvList(0, {'from': accounts[1]})) == 0
+
+
+def test_balanceOf(deploy_erc1820_register):
+    st = SampleToken.deploy({'from': accounts[0]})
+    c = HardcoreBank.deploy({'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+
+    id = 0
+    amount_0 = 1e10
+    st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
+    amount_1 = 1e15
+    st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
+
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == (amount_0 + amount_1)
