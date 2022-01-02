@@ -1,3 +1,4 @@
+from os import kill
 from brownie import accounts
 from brownie import HardcoreBank, SampleToken
 from brownie import convert
@@ -267,3 +268,50 @@ def test_collectedAmount(deploy_erc1820_register):
     testlib.increaseTime(60*60*24*31)  # skip 31days
     assert math.floor(1e10*0.2) == c.collectedAmount(st_1.address, {'from': accounts[0]})
     assert math.floor(1e10*0.2*2) == c.collectedAmount(st_2.address, {'from': accounts[0]})
+
+
+def withdraw_0():
+    st = SampleToken.deploy({'from': accounts[0]})
+    initial_balance = st.balanceOf(accounts[0])
+
+    c = HardcoreBank.deploy({'from': accounts[0]})
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+    id = 0
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st.send(c.address, 1e10, convert.to_bytes(0), {'from': accounts[0]})
+    assert initial_balance - 1e10 == st.balanceOf(accounts[0])
+
+    with brownie.reverts():
+        c.withdraw(0)
+    
+    st.send(c.address, 1e18, convert.to_bytes(0), {'from': accounts[0]})
+    c.withdraw(0)
+    assert initial_balance == st.balanceOf(accounts[0])
+
+
+def withdraw_1():
+    st = SampleToken.deploy({'from': accounts[0]})
+    initial_balance = st.balanceOf(accounts[0])
+
+    c = HardcoreBank.deploy({'from': accounts[0]})
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+    id = 0
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st.send(c.address, total_amount, convert.to_bytes(0), {'from': accounts[0]})
+
+    testlib.increaseTime(60*60*24*31)  # skip 31 days
+
+    with brownie.revert():
+        c.withdraw(0)
+    
+    st.send(c.address, total_amount, convert.to_bytes(0), {'from': accounts[0]})
+    c.withdraw(0)
+    assert initial_balance - math.ceil(0.2*total_amount) == st.balanceOf(accounts[0])

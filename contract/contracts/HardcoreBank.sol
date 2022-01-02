@@ -200,6 +200,18 @@ contract HardcoreBank is IERC777Recipient {
     }
 
 
+    function withdraw(uint256 id) public {
+        require(isOwner(id));
+        Config memory account = accountList[id];
+        uint256 balance = balanceOf(id);
+        require(balance > account.targetAmount);
+
+        // send
+        IERC777 tokenContract = IERC777(account.tokenContractAddress);
+        tokenContract.send(account.owner, balance, bytes(""));
+    }
+
+
     function isOwner(uint256 id) public view returns (bool) {
         require(id < nextID);
         return accountList[id].owner == msg.sender;
