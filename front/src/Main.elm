@@ -3,9 +3,11 @@ module Main exposing (main)
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
+import Html.Attributes exposing (..)
 import Url
-import Html.Attributes exposing (class)
-import Html.Attributes exposing (id)
+
+import Model exposing (Model)
+import Html.Events exposing (onClick)
 
 
 main : Program () Model Msg
@@ -20,33 +22,19 @@ main =
         }
 
 
-type alias Model =
-    { key : Nav.Key
-    , url : Url.Url
-    }
-
-
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init () url key =
     ( Model key url , Cmd.none )
 
 
 type Msg
-    = Msg1
-    | Msg2
-    | UrlRequested Browser.UrlRequest
+    = UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Msg1 ->
-            ( model, Cmd.none )
-
-        Msg2 ->
-            ( model, Cmd.none )
-
         UrlRequested urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
@@ -66,11 +54,18 @@ subscriptions model =
     Sub.none
 
 
+
+-- View
+
+
 view : Model -> Browser.Document Msg
 view model =
     { title = "Application Title"
     , body =
         [ navbar
+        , main_ []
+            [ accountListView
+            ]
         ]
     }
 
@@ -80,5 +75,22 @@ navbar =
     header []
         [ nav []
             [ h1 [ class "logotext" ] [ text "Hardcore Bank" ]
+            ]
+        ]
+
+
+accountListView : Html Msg
+accountListView =
+    div [ class "accounts" ]
+        [ div [ class "row" ]
+            [ div [ class "row-title" ]
+                [ h1 [ ]
+                    [ text "Accounts" 
+                    ]
+                , a [ href "/add" ]
+                    [ button [ class "add" ]
+                        [ text "Add" ]
+                    ]
+                ]
             ]
         ]

@@ -25,6 +25,7 @@ nav {
 
 .logotext {
     font-family: "PT Mono", monospace;
+    font-weight: 600;
 }
 
 nav .logotext {
@@ -35,4 +36,37 @@ nav .logotext {
 
     padding: 0.3rem 0.6rem;
     margin: 0;
+}
+
+
+
+main {
+    margin: 1rem;
+}
+
+
+.row .row-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0.2rem 0;
+
+    border-bottom: solid 1px #b6b6b6;
+}
+
+.row .row-title h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+button.add {
+    width: 8rem;
+    height: 2rem;
+    background-color: var(--keycolor);
+    border: none;
+    border-radius: 15px;
+    color: #fff;
+    cursor: pointer;
 }
