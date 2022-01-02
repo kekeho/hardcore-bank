@@ -265,12 +265,12 @@ def test_collectedAmount(deploy_erc1820_register):
     assert 0 == c.collectedAmount(st_1.address, {'from': accounts[0]})
     assert 0 == c.collectedAmount(st_2.address, {'from': accounts[0]})
     
-    testlib.increaseTime(60*60*24*31)  # skip 31days
+    testlib.increaseTime(60*60*24*62)  # skip 31days
     assert math.floor(1e10*0.2) == c.collectedAmount(st_1.address, {'from': accounts[0]})
     assert math.floor(1e10*0.2*2) == c.collectedAmount(st_2.address, {'from': accounts[0]})
 
 
-def withdraw_0():
+def test_withdraw_0():
     st = SampleToken.deploy({'from': accounts[0]})
     initial_balance = st.balanceOf(accounts[0])
 
@@ -283,17 +283,16 @@ def withdraw_0():
     id = 0
     c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
     st.send(c.address, 1e10, convert.to_bytes(0), {'from': accounts[0]})
-    assert initial_balance - 1e10 == st.balanceOf(accounts[0])
 
     with brownie.reverts():
-        c.withdraw(0)
+        c.withdraw(0, {'from': accounts[1]})
     
     st.send(c.address, 1e18, convert.to_bytes(0), {'from': accounts[0]})
-    c.withdraw(0)
-    assert initial_balance == st.balanceOf(accounts[0])
+    c.withdraw(0, {'from': accounts[1]})
+    assert 1e18+1e10 == st.balanceOf(accounts[1])
 
 
-def withdraw_1():
+def test_withdraw_1():
     st = SampleToken.deploy({'from': accounts[0]})
     initial_balance = st.balanceOf(accounts[0])
 
@@ -305,13 +304,15 @@ def withdraw_1():
     monthly = 1e5
     id = 0
     c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
-    st.send(c.address, total_amount, convert.to_bytes(0), {'from': accounts[0]})
+    st.send(c.address, total_amount//2, convert.to_bytes(0), {'from': accounts[0]})
 
-    testlib.increaseTime(60*60*24*31)  # skip 31 days
+    testlib.increaseTime(60*60*24*62)  # skip 31 days
 
-    with brownie.revert():
-        c.withdraw(0)
+    with brownie.reverts():
+        c.withdraw(0, {'from': accounts[1]})
     
     st.send(c.address, total_amount, convert.to_bytes(0), {'from': accounts[0]})
-    c.withdraw(0)
-    assert initial_balance - math.ceil(0.2*total_amount) == st.balanceOf(accounts[0])
+
+    c.withdraw(0, {'from': accounts[1]})
+    assert math.ceil(0.8*(total_amount//2)) + total_amount == st.balanceOf(accounts[1])
+

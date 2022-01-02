@@ -186,13 +186,13 @@ contract HardcoreBank is IERC777Recipient {
 
             uint256 sum = 0;
             for (uint256 j = 0; j < recvList[id].length; j=j.add(1)) {
-                sum += recvList[id][j].amount;
+                sum = sum.add(recvList[id][j].amount);
             }
 
             if (account.disabled) {
                 result = result.add(sum);
             } else {
-                result = result.add(sum - _balanceOf(id));
+                result = result.add(sum.sub(_balanceOf(id)));
             }
         }
 
@@ -204,7 +204,7 @@ contract HardcoreBank is IERC777Recipient {
         require(isOwner(id));
         Config memory account = accountList[id];
         uint256 balance = balanceOf(id);
-        require(balance > account.targetAmount);
+        require(balance >= account.targetAmount);
 
         // send
         IERC777 tokenContract = IERC777(account.tokenContractAddress);
