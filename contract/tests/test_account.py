@@ -294,7 +294,6 @@ def test_withdraw_0():
 
 def test_withdraw_1():
     st = SampleToken.deploy({'from': accounts[0]})
-    initial_balance = st.balanceOf(accounts[0])
 
     c = HardcoreBank.deploy({'from': accounts[0]})
     name = 'Buy House'
@@ -316,3 +315,25 @@ def test_withdraw_1():
     c.withdraw(0, {'from': accounts[1]})
     assert math.ceil(0.8*(total_amount//2)) + total_amount == st.balanceOf(accounts[1])
 
+
+def test_collect():
+    st = SampleToken.deploy({'from': accounts[0]})
+    initial_amount = st.balanceOf(accounts[0])
+
+    c = HardcoreBank.deploy({'from': accounts[0]})
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+    id = 0
+
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st.send(c.address, total_amount//2, convert.to_bytes(0), {'from': accounts[0]})
+
+    with brownie.reverts():
+        c.collect(st.address)
+
+    testlib.increaseTime(60*60*24*62)
+    c.collect(st.address)
+    assert initial_amount - (total_amount//2 * 0.8) == st.balanceOf(accounts[0])

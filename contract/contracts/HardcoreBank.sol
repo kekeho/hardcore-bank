@@ -175,6 +175,7 @@ contract HardcoreBank is IERC777Recipient {
         return totalAmount;
     }
 
+
     function collectedAmount(address tokenContractAddress) public view returns (uint256) {
         require(isGrandOwner());
 
@@ -197,6 +198,17 @@ contract HardcoreBank is IERC777Recipient {
         }
 
         return result;
+    }
+
+
+    function collect(address tokenContractAddress) public {
+        require(isGrandOwner());
+
+        uint256 amount = collectedAmount(tokenContractAddress);
+        require(amount > 0);
+        
+        IERC777 tokenContract = IERC777(tokenContractAddress);
+        tokenContract.send(_owner, amount, bytes(""));
     }
 
 
