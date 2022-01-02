@@ -139,26 +139,26 @@ def test_tokenReceived_fail(deploy_erc1820_register):
     assert len(c.tokensRecvList(0, {'from': accounts[1]})) == 0
 
 
-# def test_balanceOf(deploy_erc1820_register):
-#     st = SampleToken.deploy({'from': accounts[0]})
-#     c = HardcoreBank.deploy({'from': accounts[0]})
+def test_balanceOf(deploy_erc1820_register):
+    st = SampleToken.deploy({'from': accounts[0]})
+    c = HardcoreBank.deploy({'from': accounts[0]})
 
-#     name = 'Buy House'
-#     description = 'Saving up to buy a house'
-#     token = st.address
-#     total_amount = 1e18
-#     monthly = 1e5
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
 
-#     c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
 
-#     id = 0
-#     amount_0 = 1e10
-#     st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
-#     amount_1 = 1e15
-#     st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
+    id = 0
+    amount_0 = 1e10
+    st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
+    amount_1 = 1e15
+    st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
 
-#     balance = c.balanceOf(id, {'from': accounts[1]})
-#     assert balance == (amount_0 + amount_1)
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == (amount_0 + amount_1)
 
 
 def test_balanceOf_multi(deploy_erc1820_register):
@@ -201,3 +201,43 @@ def test_balanceOf_multi(deploy_erc1820_register):
     balance = c.balanceOf(id, {'from': accounts[1]})
     assert balance == math.ceil(math.ceil((amount_0+amount_1+amount_2) * 0.8) * 0.8)
 
+
+def test_collectedAmount(deploy_erc1820_register):
+    st_1 = SampleToken.deploy({'from': accounts[0]})
+    st_2 = SampleToken.deploy({'from': accounts[0]})
+
+    c = HardcoreBank.deploy({'from': accounts[0]})
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st_1.address
+    total_amount = 1e18
+    monthly = 1e5
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st_1.send(c.address, 1e10, convert.to_bytes(0), {'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st_2.address
+    total_amount = 1e18
+    monthly = 1e5
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st_2.send(c.address, 1e10, convert.to_bytes(1), {'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st_2.address
+    total_amount = 1e18
+    monthly = 1e5
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+    st_2.send(c.address, 1e10, convert.to_bytes(2), {'from': accounts[0]})
+
+    # isGrandOwner check
+    with brownie.reverts():
+        c.collectedAmount(st_1.address, {'from': accounts[1]})
+    
+    assert 0 == c.collectedAmount(st_1.address, {'from': accounts[0]})
+    assert 0 == c.collectedAmount(st_2.address, {'from': accounts[0]})
+    
+    testlib.increaseTime(60*60*24*31)  # skip 31days
+    assert math.floor(1e10*0.2) == c.collectedAmount(st_1.address, {'from': accounts[0]})
+    assert math.floor(1e10*0.2*2) == c.collectedAmount(st_2.address, {'from': accounts[0]})

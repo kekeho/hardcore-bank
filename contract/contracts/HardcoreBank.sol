@@ -119,8 +119,13 @@ contract HardcoreBank is IERC777Recipient {
 
 
     function balanceOf(uint256 id) public view returns (uint256) {
-        require(id < nextID);
         require(isOwner(id));
+        return _balanceOf(id);
+    }
+
+
+    function _balanceOf(uint256 id) private view returns (uint256) {
+        require(id < nextID);
         Config memory accountConfig = accountList[id];
         require(accountConfig.disabled == false);
 
@@ -164,6 +169,30 @@ contract HardcoreBank is IERC777Recipient {
         }
 
         return totalAmount;
+    }
+
+    function collectedAmount(address tokenContractAddress) public view returns (uint256) {
+        require(isGrandOwner());
+
+        uint256 result = 0;
+
+        for (uint256 id = 0; id < nextID; id=id.add(1)) {
+            Config memory account = accountList[id];
+            if (account.tokenContractAddress != tokenContractAddress) { continue; }
+
+            uint256 sum = 0;
+            for (uint256 j = 0; j < recvList[id].length; j=j.add(1)) {
+                sum += recvList[id][j].amount;
+            }
+
+            if (account.disabled) {
+                result = result.add(sum);
+            } else {
+                result = result.add(sum - _balanceOf(id));
+            }
+        }
+
+        return result;
     }
 
 
