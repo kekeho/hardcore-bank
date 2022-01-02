@@ -94,8 +94,6 @@ contract HardcoreBank is IERC777Recipient {
         require(accountList[id].owner == msg.sender);
 
         accountList[id].disabled = true;
-
-        // TODO: 残高があれば回収
     }
 
 
