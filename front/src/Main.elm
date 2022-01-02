@@ -4,6 +4,8 @@ import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Url
+import Html.Attributes exposing (class)
+import Html.Attributes exposing (id)
 
 
 main : Program () Model Msg
@@ -21,13 +23,12 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
-    , property : String
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init () url key =
-    ( Model key url "modelInitialValue", Cmd.none )
+    ( Model key url , Cmd.none )
 
 
 type Msg
@@ -69,7 +70,15 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Application Title"
     , body =
-        [ div []
-            [ text "New Application" ]
+        [ navbar
         ]
     }
+
+
+navbar : Html Msg
+navbar =
+    header []
+        [ nav []
+            [ h1 [ class "logotext" ] [ text "Hardcore Bank" ]
+            ]
+        ]
