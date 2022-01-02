@@ -162,7 +162,6 @@ def test_balanceOf(deploy_erc1820_register):
 
 
 def test_balanceOf_multi(deploy_erc1820_register):
-
     st = SampleToken.deploy({'from': accounts[0]})
     c = HardcoreBank.deploy({'from': accounts[0]})
 
@@ -200,6 +199,33 @@ def test_balanceOf_multi(deploy_erc1820_register):
     testlib.increaseTime(60*60*24*30)  # skip 31days
     balance = c.balanceOf(id, {'from': accounts[1]})
     assert balance == math.ceil(math.ceil((amount_0+amount_1+amount_2) * 0.8) * 0.8)
+
+
+def test_balanceOf_over_targetAmount(deploy_erc1820_register):
+    
+    st = SampleToken.deploy({'from': accounts[0]})
+    c = HardcoreBank.deploy({'from': accounts[0]})
+
+    name = 'Buy House'
+    description = 'Saving up to buy a house'
+    token = st.address
+    total_amount = 1e18
+    monthly = 1e5
+
+    c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+
+    id = 0
+    amount_0 = total_amount // 2
+    st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
+
+    testlib.increaseTime(60*60*24*20)  # skip 20 days
+
+    amount_1 = total_amount // 2
+    st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
+
+    testlib.increaseTime(60*60*24*600)  # skip many days...
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == amount_0 + amount_1
 
 
 def test_collectedAmount(deploy_erc1820_register):

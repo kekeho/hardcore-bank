@@ -160,8 +160,12 @@ contract HardcoreBank is IERC777Recipient {
                 totalAmount = totalAmount.add(monthTotal);
             } else {
                 // old failed month
-                totalAmount = totalAmount.add(monthTotal);  // totalAmount += monthTotal
-                totalAmount = totalAmount.sub(totalAmount.div(5));  // totalAmount -= totalAmount/5
+                if ( totalAmount >= accountConfig.targetAmount ) {
+                    totalAmount = totalAmount.add(monthTotal);
+                } else {
+                    totalAmount = totalAmount.add(monthTotal);  // totalAmount += monthTotal
+                    totalAmount = totalAmount.sub(totalAmount.div(5));  // totalAmount -= totalAmount/5
+                }
             }
 
             addMonth = addMonth.add(1);
