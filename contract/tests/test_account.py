@@ -2,6 +2,9 @@ from brownie import accounts
 from brownie import HardcoreBank, SampleToken
 from brownie import convert
 import brownie
+import testlib
+import math
+import time
 
 
 def test_createAccount_getAccount(deploy_erc1820_register):
@@ -136,7 +139,30 @@ def test_tokenReceived_fail(deploy_erc1820_register):
     assert len(c.tokensRecvList(0, {'from': accounts[1]})) == 0
 
 
-def test_balanceOf(deploy_erc1820_register):
+# def test_balanceOf(deploy_erc1820_register):
+#     st = SampleToken.deploy({'from': accounts[0]})
+#     c = HardcoreBank.deploy({'from': accounts[0]})
+
+#     name = 'Buy House'
+#     description = 'Saving up to buy a house'
+#     token = st.address
+#     total_amount = 1e18
+#     monthly = 1e5
+
+#     c.createAccount(name, description, token, total_amount, monthly, {'from': accounts[1]})
+
+#     id = 0
+#     amount_0 = 1e10
+#     st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
+#     amount_1 = 1e15
+#     st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
+
+#     balance = c.balanceOf(id, {'from': accounts[1]})
+#     assert balance == (amount_0 + amount_1)
+
+
+def test_balanceOf_multi(deploy_erc1820_register):
+
     st = SampleToken.deploy({'from': accounts[0]})
     c = HardcoreBank.deploy({'from': accounts[0]})
 
@@ -150,9 +176,28 @@ def test_balanceOf(deploy_erc1820_register):
 
     id = 0
     amount_0 = 1e10
-    st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})
-    amount_1 = 1e15
-    st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})
+    st.send(c.address, amount_0, convert.to_bytes(id), {'from': accounts[0]})  # 1/2
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == amount_0
 
+    testlib.increaseTime(60*60*24*31) # skip 31days
+    amount_1 = 1e15
+    st.send(c.address, amount_1, convert.to_bytes(id), {'from': accounts[0]})  # 2/3
     balance = c.balanceOf(id, {'from': accounts[1]})
     assert balance == (amount_0 + amount_1)
+
+    testlib.increaseTime(60*60*24*31)  # skip 31days
+    amount_2 = 234
+    st.send(c.address, amount_2, convert.to_bytes(id), {'from': accounts[0]})  # 3/23
+    testlib.mine()
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == (amount_0+amount_1 + amount_2)
+
+    testlib.increaseTime(60*60*24*30)  # skip 31days
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == math.ceil((amount_0+amount_1+amount_2) * 0.8)
+
+    testlib.increaseTime(60*60*24*30)  # skip 31days
+    balance = c.balanceOf(id, {'from': accounts[1]})
+    assert balance == math.ceil(math.ceil((amount_0+amount_1+amount_2) * 0.8) * 0.8)
+

@@ -44,6 +44,7 @@ contract HardcoreBank is IERC777Recipient {
 
     mapping(uint256 => RecvTransaction[]) private recvList;  // ID => RecvTransaction
 
+
     constructor() {
         // set owner;
         _owner = msg.sender;
@@ -52,12 +53,14 @@ contract HardcoreBank is IERC777Recipient {
         _erc1820Registry.setInterfaceImplementer(address(this), keccak256("ERC777TokensRecipient"), address(this));
     }
 
+
     function createAccount(string calldata subject, string calldata description, address token, uint256 targetAmount, uint256 monthlyRemittrance) public {
         accountList[nextID] = Config(msg.sender, subject, description,
                                      token, targetAmount, monthlyRemittrance, block.timestamp, false);
         userAccountList[msg.sender].push(nextID);
         nextID = nextID.add(1);
     }
+
 
     function getAccounts() public view returns (Config[] memory) {
         // count length
@@ -83,6 +86,7 @@ contract HardcoreBank is IERC777Recipient {
         return result;
     }
 
+
     // Logical Delete
     function disable(uint256 id) public {
         require(id < nextID);
@@ -93,6 +97,7 @@ contract HardcoreBank is IERC777Recipient {
 
         // TODO: 残高があれば回収
     }
+
 
     function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata data, bytes calldata operatorData) external {
         uint256 id = toUint256(data);
@@ -106,10 +111,12 @@ contract HardcoreBank is IERC777Recipient {
         );
     }
 
+
     function tokensRecvList(uint256 id) public view returns (RecvTransaction[] memory) {
         require(isOwner(id));
         return recvList[id];
     }
+
 
     function balanceOf(uint256 id) public view returns (uint256) {
         require(id < nextID);
@@ -119,45 +126,52 @@ contract HardcoreBank is IERC777Recipient {
 
         // calc total amount
         uint256 start = accountConfig.created;
-        uint256 end = block.timestamp;
         uint256 totalAmount = 0;  // result
         uint256 ri = 0;  // recvList index
-        uint256 addMonth = 0;
+        uint256 addMonth = 1;
         // calc par month
         while (true) {
             // next year/month
-            uint256 next = BokkyPooBahsDateTimeLibrary.addMonths(start, addMonth.add(1));
+            uint256 nextMonth = BokkyPooBahsDateTimeLibrary.addMonths(start, addMonth);
+            uint256 currentMonth = BokkyPooBahsDateTimeLibrary.addMonths(start, addMonth.sub(1));
 
             uint256 monthTotal = 0;
             // look each recv-transaction
             while (ri < recvList[id].length) {
                 RecvTransaction memory recv = recvList[id][ri];
-                if (recv.timestamp >= next) {
-                    ri = ri.add(1);
+                if (recv.timestamp >= nextMonth) {
                     break;
                 }
                 monthTotal = monthTotal.add(recv.amount);
                 ri = ri.add(1);
             }
 
-            if (monthTotal > accountConfig.monthlyRemittrance) {
+
+            if (currentMonth < block.timestamp && block.timestamp < nextMonth) {
+                // current month
+                totalAmount = totalAmount.add(monthTotal);
+            } else if (monthTotal >= accountConfig.monthlyRemittrance) {
+                // old great month
                 totalAmount = totalAmount.add(monthTotal);
             } else {
-                totalAmount = totalAmount.add(monthTotal);
-                totalAmount = totalAmount.sub(totalAmount.div(5));
+                // old failed month
+                totalAmount = totalAmount.add(monthTotal);  // totalAmount += monthTotal
+                totalAmount = totalAmount.sub(totalAmount.div(5));  // totalAmount -= totalAmount/5
             }
 
             addMonth = addMonth.add(1);
-            if (next > end) { break; }
+            if (nextMonth > block.timestamp) { break; }
         }
-        
+
         return totalAmount;
     }
+
 
     function isOwner(uint256 id) public view returns (bool) {
         require(id < nextID);
         return accountList[id].owner == msg.sender;
     }
+
 
     function isGrandOwner() public view returns (bool) {
         return msg.sender == _owner;
