@@ -5,9 +5,11 @@ import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Url
-
-import Model exposing (Model)
+import Url.Parser
 import Html.Events exposing (onClick)
+import Browser exposing (Document)
+
+import Model exposing (..)
 
 
 main : Program () Model Msg
@@ -60,12 +62,19 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Application Title"
+    let
+        subdoc = case Url.Parser.parse Model.routeParser model.url of
+            Just Index ->
+                accountListView
+            Just Add ->
+                addView
+            Nothing ->
+                notFoundView
+    in
+    { title = "Hardcore Bank | " ++ subdoc.title
     , body =
         [ navbar
-        , main_ []
-            [ accountListView
-            ]
+        , main_ [] subdoc.body
         ]
     }
 
@@ -74,23 +83,48 @@ navbar : Html Msg
 navbar =
     header []
         [ nav []
-            [ h1 [ class "logotext" ] [ text "Hardcore Bank" ]
+            [ a [ href "/" ]
+                [ h1 [ class "logotext" ]
+                    [ text "Hardcore Bank" ]
+                ]
             ]
         ]
 
 
-accountListView : Html Msg
+notFoundView : Document Msg
+notFoundView =
+    { title = "Not Found"
+    , body =
+        [ div [ class "not found" ]
+            [ text "404 Not Found" ]
+        ]
+    }
+
+
+accountListView : Document Msg
 accountListView =
-    div [ class "accounts" ]
-        [ div [ class "row" ]
-            [ div [ class "row-title" ]
-                [ h1 [ ]
-                    [ text "Accounts" 
-                    ]
-                , a [ href "/add" ]
-                    [ button [ class "add" ]
-                        [ text "Add" ]
+    { title = "My page"
+    , body =
+        [ div [ class "accounts" ]
+            [ div [ class "row" ]
+                [ div [ class "row-title" ]
+                    [ h1 [ ]
+                        [ text "Accounts" 
+                        ]
+                    , a [ href "/add" ]
+                        [ button [ class "add" ]
+                            [ text "Add" ]
+                        ]
                     ]
                 ]
             ]
         ]
+    }
+
+
+addView : Document Msg
+addView =
+    { title = "Create Account"
+    , body =
+        []
+    }
