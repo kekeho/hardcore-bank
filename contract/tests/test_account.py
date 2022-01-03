@@ -27,12 +27,13 @@ def test_createAccount_getAccount(deploy_erc1820_register):
     config_head = config_list[0]
 
     # config check
-    assert config_head[0] == accounts[1]
-    assert config_head[1] == name
-    assert config_head[2] == description
-    assert config_head[3] == token
-    assert config_head[4] == total_amount
-    assert config_head[5] == monthly
+    assert config_head[0] == 0
+    assert config_head[1] == accounts[1]
+    assert config_head[2] == name
+    assert config_head[3] == description
+    assert config_head[4] == token
+    assert config_head[5] == total_amount
+    assert config_head[6] == monthly
 
     # other account
     assert len(c.getAccounts({'from': accounts[0]})) == 0
@@ -59,12 +60,13 @@ def test_createAccount_getAccount_many(deploy_erc1820_register):
         assert len(accounts_list) == i+1
 
         config_head = accounts_list[i]
-        assert config_head[0] == accounts[0]
-        assert config_head[1] == name[i]
-        assert config_head[2] == description[i]
-        assert config_head[3] == token[i]
-        assert config_head[4] == total_amount[i]
-        assert config_head[5] == monthly[i]
+        assert config_head[0] == i
+        assert config_head[1] == accounts[0]
+        assert config_head[2] == name[i]
+        assert config_head[3] == description[i]
+        assert config_head[4] == token[i]
+        assert config_head[5] == total_amount[i]
+        assert config_head[6] == monthly[i]
 
 
 def test_disable(deploy_erc1820_register):
@@ -93,7 +95,7 @@ def test_disable(deploy_erc1820_register):
     # get accounts
     accounts_list = c.getAccounts({'from': accounts[0]})
     assert len(accounts_list) == 2
-    assert name[1] not in [a[1] for a in accounts_list]
+    assert name[1] not in [a[2] for a in accounts_list]
 
 
 def test_tokenReceived(deploy_erc1820_register):

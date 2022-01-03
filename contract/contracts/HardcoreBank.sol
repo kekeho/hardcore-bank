@@ -8,6 +8,7 @@ import "contracts/Utils.sol";
 
 
 struct Config {
+    uint256 id;
     address owner;  // creator of account
     string subject;  // name of account
     string description;  // memo
@@ -38,9 +39,8 @@ contract HardcoreBank is IERC777Recipient {
     uint256 constant private _decimal = 18;
     IERC1820Registry private _erc1820Registry = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
-    mapping(uint256 => Config) private accountList;  // ID => account
+    Config[] private accountList;  // ID => account
     mapping(address => uint256[]) private userAccountList;  // user adderss => ID list
-    uint256 private nextID = 0;
 
     mapping(uint256 => RecvTransaction[]) private recvList;  // ID => RecvTransaction
 
@@ -55,10 +55,12 @@ contract HardcoreBank is IERC777Recipient {
 
 
     function createAccount(string calldata subject, string calldata description, address token, uint256 targetAmount, uint256 monthlyRemittrance) public {
-        accountList[nextID] = Config(msg.sender, subject, description,
-                                     token, targetAmount, monthlyRemittrance, block.timestamp, false);
-        userAccountList[msg.sender].push(nextID);
-        nextID = nextID.add(1);
+        uint256 id = accountList.length;
+        accountList.push(
+            Config(id, msg.sender, subject, description, token, targetAmount,
+                   monthlyRemittrance, block.timestamp, false)
+        );
+        userAccountList[msg.sender].push(id);
     }
 
 
@@ -89,7 +91,7 @@ contract HardcoreBank is IERC777Recipient {
 
     // Logical Delete
     function disable(uint256 id) public {
-        require(id < nextID);
+        require(id < accountList.length);
         require(accountList[id].disabled == false);
         require(accountList[id].owner == msg.sender);
 
@@ -99,7 +101,7 @@ contract HardcoreBank is IERC777Recipient {
 
     function tokensReceived(address operator, address from, address to, uint256 amount, bytes calldata data, bytes calldata operatorData) external {
         uint256 id = toUint256(data);
-        require(id < nextID);
+        require(id < accountList.length);
         require(accountList[id].disabled == false);
         require(to == address(this));
         require(msg.sender == accountList[id].tokenContractAddress);
@@ -123,7 +125,7 @@ contract HardcoreBank is IERC777Recipient {
 
 
     function _balanceOf(uint256 id) private view returns (uint256) {
-        require(id < nextID);
+        require(id < accountList.length);
         Config memory accountConfig = accountList[id];
         require(accountConfig.disabled == false);
 
@@ -179,7 +181,7 @@ contract HardcoreBank is IERC777Recipient {
 
         uint256 result = 0;
 
-        for (uint256 id = 0; id < nextID; id=id.add(1)) {
+        for (uint256 id = 0; id < accountList.length; id=id.add(1)) {
             Config memory account = accountList[id];
             if (account.tokenContractAddress != tokenContractAddress) { continue; }
 
@@ -223,7 +225,7 @@ contract HardcoreBank is IERC777Recipient {
 
 
     function isOwner(uint256 id) public view returns (bool) {
-        require(id < nextID);
+        require(id < accountList.length);
         return accountList[id].owner == msg.sender;
     }
 
