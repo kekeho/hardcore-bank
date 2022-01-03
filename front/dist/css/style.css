@@ -46,13 +46,17 @@ main {
 
 
 .row .row-title {
+    width: 100%;
+
     display: flex;
     justify-content: space-between;
     align-items: center;
 
+    margin-bottom: 1.5rem;
     padding: 0.2rem 0;
 
     border-bottom: solid 1px #b6b6b6;
+
 }
 
 .row .row-title h1 {
@@ -62,6 +66,57 @@ main {
 }
 
 button.add {
+    width: 8rem;
+    height: 2rem;
+    background-color: var(--keycolor);
+    border: none;
+    border-radius: 15px;
+    color: #fff;
+    cursor: pointer;
+}
+
+
+
+/* add */
+.add .row {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.add .form {
+    width: 100%;
+    max-width: 30rem;
+
+    border-radius: 10px;
+    box-shadow: 10px 10px 25px 5px #d8d8d8;
+
+    padding: 1rem;
+}
+
+.add .form label {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+}
+
+
+.add .form input {
+    display: block;
+
+    margin-bottom: 2rem;
+
+    border: none;
+    border-bottom: solid 1px #b6b6b6;
+    width: 100%;
+
+    font-size: 1.2rem;
+    font-weight: 700;
+
+    outline: none;
+}
+
+.add .form button.submit {
     width: 8rem;
     height: 2rem;
     background-color: var(--keycolor);
