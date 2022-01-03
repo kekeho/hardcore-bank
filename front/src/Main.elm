@@ -8,6 +8,8 @@ import Url
 import Url.Parser
 import Html.Events exposing (onClick, onInput)
 import Json.Encode
+import Json.Decode
+import BigInt
 
 import Model exposing (..)
 
@@ -27,18 +29,22 @@ main =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init () url key =
-    ( Model key url Nothing Model.initAddfield , Cmd.none )
+    ( Model key url Nothing [] Model.initAddfield , Cmd.none )
 
 
 -- Ports
 port createAccount : Json.Encode.Value -> Cmd msg
 port created : (String -> msg) -> Sub msg
 
+port getAccounts : () -> Cmd msg
+port gotAccounts : (Json.Decode.Value -> msg) -> Sub msg
+
 
 type Msg
     = UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
     | AddField AddFieldMsg
+    | GotAccounts Json.Decode.Value
 
 
 type AddFieldMsg
@@ -63,8 +69,15 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
+            let
+                cmd_ =  case Url.Parser.parse Model.routeParser url of
+                    Just Index ->
+                        getAccounts ()
+                    _ ->
+                        Cmd.none
+            in
             ( { model | url = url }
-            , Cmd.none
+            , cmd_
             )
         
         AddField subMsg ->
@@ -102,22 +115,32 @@ update msg model =
                             ({ addField | errors = errors }, Cmd.none)
                     Created _ ->
                         (Model.initAddfield, Nav.pushUrl model.key "/")
-                        
-
             in
             ( { model | addField = addField_ }
             , cmd_
             )
 
+        GotAccounts json ->
+            let
+                accounts = case Json.Decode.decodeValue accountsDecoder json of
+                   Ok a -> a
+                   Err x -> []
+            in
+            ( { model | accounts = accounts }
+            , Cmd.none
+            )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    created (\x -> AddField (Created x))
+    Sub.batch
+        [ created (\x -> AddField (Created x))
+        , gotAccounts GotAccounts
+        ]
 
 
 
 -- View
-
 
 view : Model -> Browser.Document Msg
 view model =

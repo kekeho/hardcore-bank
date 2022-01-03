@@ -6,12 +6,15 @@ import Url.Parser
 import Html exposing (a)
 import Html exposing (address)
 import Json.Encode
+import Json.Decode
+import Json.Decode.Pipeline exposing (required)
 
 
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
     , address : Maybe Address
+    , accounts : List Account
     , addField : AddField
     }
 
@@ -25,6 +28,21 @@ type AddFieldType
     | ContractAddressField
     | TargetAmountField
     | MonthlyRemittranceField
+
+
+type alias Account =
+    { id : String
+    , subject : String
+    , description : String
+    , contractAddress : Address
+    , tokenName : String
+    , tokenSymbol : String
+    , targetAmount : String  -- big int
+    , monthlyRemittrance : String  -- big int
+    , created : Int  -- timestamp
+    , balance : String -- big int
+    }
+
 
 type alias AddField =
     { subject : String
@@ -132,6 +150,25 @@ addFieldEncoder addfield =
         , ( "monthlyRemittrance", Json.Encode.float addfield.monthlyRemittrance )
         ]
 
+
+accountsDecoder : Json.Decode.Decoder (List Account)
+accountsDecoder =
+    Json.Decode.list accountDecoder
+
+
+accountDecoder : Json.Decode.Decoder Account
+accountDecoder =
+    Json.Decode.succeed Account
+        |> required "id" Json.Decode.string
+        |> required "subject" Json.Decode.string
+        |> required "description" Json.Decode.string
+        |> required "contractAddress" Json.Decode.string
+        |> required "tokenName" Json.Decode.string
+        |> required "tokenSymbol" Json.Decode.string
+        |> required "targetAmount" Json.Decode.string
+        |> required "monthlyRemittrance" Json.Decode.string
+        |> required "created" Json.Decode.int
+        |> required "balance" Json.Decode.string
 
 
 -- Route
