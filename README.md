@@ -23,4 +23,4 @@ brownie run deploy
 
 ## testnet
 
-`0xe47CC0a714e363B3765C8c4b0125C6Af3f7e6DfF` on Ropsten
+`0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8` on Ropsten
