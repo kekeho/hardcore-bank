@@ -125,3 +125,16 @@ button.add {
     color: #fff;
     cursor: pointer;
 }
+
+
+.add .form p.error {
+    top: -1.8rem;
+    position: relative;
+
+    height: 0;
+
+    font-size: 0.6rem;
+    margin: 0;
+    font-weight: 700;
+    color: #a30707;
+}
