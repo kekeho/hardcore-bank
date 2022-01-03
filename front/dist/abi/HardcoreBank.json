@@ -1,0 +1,247 @@
+[{
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [{
+      "internalType": "uint256",
+      "name": "id",
+      "type": "uint256"
+    }],
+    "name": "balanceOf",
+    "outputs": [{
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "address",
+      "name": "tokenContractAddress",
+      "type": "address"
+    }],
+    "name": "collect",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "address",
+      "name": "tokenContractAddress",
+      "type": "address"
+    }],
+    "name": "collectedAmount",
+    "outputs": [{
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+        "internalType": "string",
+        "name": "subject",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "monthlyRemittrance",
+        "type": "uint256"
+      }
+    ],
+    "name": "createAccount",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "uint256",
+      "name": "id",
+      "type": "uint256"
+    }],
+    "name": "disable",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getAccounts",
+    "outputs": [{
+      "components": [{
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "subject",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "tokenContractAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "targetAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "monthlyRemittrance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "created",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "disabled",
+          "type": "bool"
+        }
+      ],
+      "internalType": "struct Config[]",
+      "name": "",
+      "type": "tuple[]"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isGrandOwner",
+    "outputs": [{
+      "internalType": "bool",
+      "name": "",
+      "type": "bool"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "uint256",
+      "name": "id",
+      "type": "uint256"
+    }],
+    "name": "isOwner",
+    "outputs": [{
+      "internalType": "bool",
+      "name": "",
+      "type": "bool"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "operatorData",
+        "type": "bytes"
+      }
+    ],
+    "name": "tokensReceived",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "uint256",
+      "name": "id",
+      "type": "uint256"
+    }],
+    "name": "tokensRecvList",
+    "outputs": [{
+      "components": [{
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "internalType": "struct RecvTransaction[]",
+      "name": "",
+      "type": "tuple[]"
+    }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{
+      "internalType": "uint256",
+      "name": "id",
+      "type": "uint256"
+    }],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
@@ -7,7 +7,7 @@ import Html.Attributes exposing (..)
 import Url
 import Url.Parser
 import Html.Events exposing (onClick, onInput)
-import Browser exposing (Document)
+import Json.Encode
 
 import Model exposing (..)
 
@@ -30,6 +30,11 @@ init () url key =
     ( Model key url Nothing Model.initAddfield , Cmd.none )
 
 
+-- Ports
+port createAccount : Json.Encode.Value -> Cmd msg
+port created : (String -> msg) -> Sub msg
+
+
 type Msg
     = UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
@@ -43,6 +48,7 @@ type AddFieldMsg
     | TargetAmount String
     | MonthlyRemittrance String
     | Submit
+    | Created String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -64,44 +70,49 @@ update msg model =
         AddField subMsg ->
             let
                 addField = model.addField
-                addField_ = case subMsg of
+                (addField_, cmd_) = case subMsg of
                     Subject subject ->
-                        { addField | subject = subject }
+                        ({ addField | subject = subject }, Cmd.none)
                     Description desc ->
-                        { addField | description = desc }
+                        ({ addField | description = desc }, Cmd.none)
                     ContractAddress ca ->
-                        { addField | contractAddress = ca }
+                        ({ addField | contractAddress = ca }, Cmd.none)
                     TargetAmount maybeTa ->
                         case String.toFloat maybeTa of
                             Just ta ->
-                                { addField | targetAmount = ta } 
+                                ({ addField | targetAmount = ta }, Cmd.none)
                             Nothing ->
-                                addField
+                                (addField, Cmd.none)
                     MonthlyRemittrance maybeMr ->
                         case String.toFloat maybeMr of
                             Just mr ->
-                                { addField | monthlyRemittrance = mr } 
+                                ({ addField | monthlyRemittrance = mr }, Cmd.none)
                             Nothing ->
-                                addField
+                                (addField, Cmd.none)
                     Submit ->
                         -- validate
                         let
                             errors = addFormValidate addField
                         in
                         if List.length errors == 0 then
-                            { addField | errors = [] }
+                            ( { addField | errors = [], sending = True }
+                            , createAccount <| Model.addFieldEncoder model.addField
+                            )
                         else
-                            { addField | errors = errors } 
+                            ({ addField | errors = errors }, Cmd.none)
+                    Created _ ->
+                        (Model.initAddfield, Nav.pushUrl model.key "/")
+                        
 
             in
             ( { model | addField = addField_ }
-            , Cmd.none
+            , cmd_
             )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    created (\x -> AddField (Created x))
 
 
 
@@ -139,7 +150,7 @@ navbar =
         ]
 
 
-notFoundView : Document Msg
+notFoundView : Browser.Document Msg
 notFoundView =
     { title = "Not Found"
     , body =
@@ -149,7 +160,7 @@ notFoundView =
     }
 
 
-accountListView : Document Msg
+accountListView : Browser.Document Msg
 accountListView =
     { title = "My page"
     , body =
@@ -170,7 +181,7 @@ accountListView =
     }
 
 
-addView : Model -> Document Msg
+addView : Model -> Browser.Document Msg
 addView model =
     { title = "Create Account"
     , body =

@@ -5,6 +5,7 @@ import Url
 import Url.Parser
 import Html exposing (a)
 import Html exposing (address)
+import Json.Encode
 
 
 type alias Model =
@@ -32,6 +33,7 @@ type alias AddField =
     , targetAmount : Float
     , monthlyRemittrance : Float
     , errors : List (AddFieldType, String)
+    , sending : Bool
     }
 
 
@@ -44,6 +46,7 @@ initAddfield =
         0.0
         0.0
         []
+        False
 
 
 -- Func
@@ -117,6 +120,17 @@ onlyHex str =
             False
            
 
+-- Json
+
+addFieldEncoder : AddField -> Json.Encode.Value
+addFieldEncoder addfield =
+    Json.Encode.object
+        [ ( "subject", Json.Encode.string addfield.subject )
+        , ( "description", Json.Encode.string addfield.description )
+        , ( "tokenContractAddress", Json.Encode.string addfield.contractAddress )
+        , ( "targetAmount", Json.Encode.float addfield.targetAmount )
+        , ( "monthlyRemittrance", Json.Encode.float addfield.monthlyRemittrance )
+        ]
 
 
 
