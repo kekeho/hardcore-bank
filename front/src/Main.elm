@@ -12,6 +12,7 @@ import Json.Decode
 import BigInt
 
 import Model exposing (..)
+import Maybe exposing (andThen)
 
 
 
@@ -147,7 +148,7 @@ view model =
     let
         subdoc = case Url.Parser.parse Model.routeParser model.url of
             Just Index ->
-                accountListView
+                accountListView model
             Just Add ->
                 addView model
             Nothing ->
@@ -183,8 +184,8 @@ notFoundView =
     }
 
 
-accountListView : Browser.Document Msg
-accountListView =
+accountListView : Model -> Browser.Document Msg
+accountListView model =
     { title = "My page"
     , body =
         [ div [ class "accounts" ]
@@ -198,10 +199,57 @@ accountListView =
                             [ text "Add" ]
                         ]
                     ]
+                , div [ class "account-list" ]
+                    (List.map accountView model.accounts)
                 ]
             ]
         ]
     }
+
+
+accountView : Account -> Html msg
+accountView account =
+    let
+        current = case balanceToFloatStr 18 account.balance of
+            Just x -> x
+            Nothing -> "NA"
+        target = case balanceToFloatStr 18 account.targetAmount of
+            Just x -> x
+            Nothing -> "NA"
+        monthly = case balanceToFloatStr 18 account.monthlyRemittrance of
+            Just x -> x
+            Nothing -> "NA"
+    in
+    div [ class "account-block" ]
+        [ p [ class "id" ] [ text <| "ID: " ++ account.id ]
+        , h2 [] [ text account.subject ]
+        , p [ class "description" ] [ text account.description ]
+        , div [ class "balance" ]
+            [ table []
+                [ tbody []
+                    [ tr []
+                        [ td []
+                            [ text "Balance:" ]
+                        , td [ class "val" ]
+                            [ span [ class "current" ] 
+                                [ text current ]
+                            , span [] [ text "/" ]
+                            , span [ class "target" ] [ text target ]
+                            , span [ class "token-symbol" ] [ text account.tokenSymbol ]
+                            ]
+                        ]
+                    , tr []
+                        [ td []
+                            [ text "Monthly Remittrance:" ]
+                        , td [ class "val" ]
+                            [ text monthly
+                            , span [ class "token-symbol" ] [ text account.tokenSymbol ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
 
 
 addView : Model -> Browser.Document Msg
@@ -284,3 +332,28 @@ addView model =
             ]
         ]
     }
+
+
+
+
+balanceToFloatStr : Int -> String -> Maybe String
+balanceToFloatStr decimal strBalance =
+    let
+        d = BigInt.pow (BigInt.fromInt 10) (BigInt.fromInt decimal)
+    in
+    BigInt.fromIntString strBalance
+        |> andThen (\x -> Just <| BigInt.div x d)
+        |> andThen (\x -> Just <| BigInt.toString x)
+        |> andThen (\x -> Just <| x ++ "." ++ (String.slice (String.length x) (String.length strBalance) strBalance))
+        |> andThen (\x -> Just <| dropRightZero x)
+        |> andThen (\x -> Just <| if String.endsWith "." x then x ++ "0" else x )
+
+
+dropRightZero : String -> String
+dropRightZero str =
+    if String.length str == 0 then str else
+    case String.slice ((String.length str)-1) (String.length str) str of
+        "0" ->
+            dropRightZero <| String.slice 0 ((String.length str)-1) str
+        _ ->
+            str

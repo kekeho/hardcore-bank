@@ -139,3 +139,53 @@ button.add {
     font-weight: 700;
     color: #a30707;
 }
+
+
+.account-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 2rem 2rem;
+}
+
+
+.account-list .account-block {
+    max-width: 18rem;
+    height: 15rem;
+    width: 100%;
+
+    position: relative;
+
+    border-radius: 15px;
+    box-shadow: 10px 10px 25px 5px #d8d8d8;
+
+    padding: 1rem;
+}
+
+.account-block p.id {
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.account-block h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.account-block p.description {
+    font-size: 0.8rem;
+}
+
+.account-block div.balance {
+    position: absolute;
+    bottom: 1rem;
+}
+
+.account-block span.token-symbol {
+    margin-left: 0.5rem;
+}
+
+.account-block td.val {
+    text-align: right;
+}

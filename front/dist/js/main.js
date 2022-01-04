@@ -4,31 +4,9 @@ let app = Elm.Main.init();
 
 // web3
 const web3 = new Web3(Web3.givenProvider);
-
-
 let accounts;
-ethereum.request(
-    {'method': 'eth_requestAccounts'}
-).then(a => {
-    accounts = a;
-})
-
-
-// init
 let hardcoreBank;
-fetch('/abi/HardcoreBank.json')
-    .then(resp => resp.json())
-    .then(abi => {
-        hardcoreBank = new web3.eth.Contract(abi, '0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8');
-    })
-
 let erc777abi;
-fetch('/abi/ERC777.json')
-    .then(resp => resp.json())
-    .then(abi => {
-        erc777abi = abi;
-    });
-
 
 
 function createAccount(json) {
@@ -39,8 +17,6 @@ function createAccount(json) {
         .send({'from': accounts[0]})
         .then(() => { app.ports.created.send("DONE")});
 }
-
-
 app.ports.createAccount.subscribe(createAccount);
 
 
@@ -60,6 +36,7 @@ app.ports.createAccount.subscribe(createAccount);
 function getAccounts() {
     _getAccounts();
 }
+
 async function _getAccounts() {
     let data = await hardcoreBank.methods.getAccounts().call({'from': accounts[0]})
     let result = new Array(data.length);
@@ -89,3 +66,32 @@ async function _getAccounts() {
     app.ports.gotAccounts.send(result);
 }
 app.ports.getAccounts.subscribe(getAccounts);
+
+
+function init() {
+    _init();
+}
+
+async function _init() {
+    let resp_bank = await fetch('/abi/HardcoreBank.json');
+    let abi = await resp_bank.json();
+    hardcoreBank = new web3.eth.Contract(abi, '0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8');
+
+    let resp_token = await fetch('/abi/ERC777.json');
+    erc777abi = await resp_token.json();
+
+    _initWallet();
+}
+
+
+function _initWallet() {
+    ethereum.request(
+        {'method': 'eth_requestAccounts'}
+    ).then(a => {
+        accounts = a;
+        getAccounts();
+    })
+}
+
+// init
+init();
