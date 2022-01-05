@@ -2,7 +2,7 @@ module Model exposing (..)
 
 import Browser.Navigation as Nav
 import Url
-import Url.Parser
+import Url.Parser exposing ((</>))
 import Html exposing (a)
 import Html exposing (address)
 import Json.Encode
@@ -16,6 +16,7 @@ type alias Model =
     , address : Maybe Address
     , accounts : List Account
     , addField : AddField
+    , depositField : DepositField
     }
 
 
@@ -55,6 +56,14 @@ type alias AddField =
     }
 
 
+type alias DepositField =
+    { value : Float
+    , tokenBalance : String
+    , amountError : Maybe String
+    , result : Bool
+    }
+
+
 initAddfield : AddField
 initAddfield =
     AddField
@@ -65,6 +74,11 @@ initAddfield =
         0.0
         []
         False
+
+
+initDepositField : DepositField
+initDepositField =
+    DepositField 0.0 "0" Nothing True
 
 
 -- Func
@@ -146,8 +160,8 @@ addFieldEncoder addfield =
         [ ( "subject", Json.Encode.string addfield.subject )
         , ( "description", Json.Encode.string addfield.description )
         , ( "tokenContractAddress", Json.Encode.string addfield.contractAddress )
-        , ( "targetAmount", Json.Encode.float addfield.targetAmount )
-        , ( "monthlyRemittrance", Json.Encode.float addfield.monthlyRemittrance )
+        , ( "targetAmount", Json.Encode.string <| toStr 18 addfield.targetAmount )
+        , ( "monthlyRemittrance", Json.Encode.string <| toStr 18 addfield.monthlyRemittrance )
         ]
 
 
@@ -171,11 +185,21 @@ accountDecoder =
         |> required "balance" Json.Decode.string
 
 
+depositEncoder : Address -> String -> Float -> Json.Encode.Value
+depositEncoder contractAddr id amount =
+    Json.Encode.object
+        [ ("tokenContractAddress", Json.Encode.string contractAddr)
+        , ("amount", Json.Encode.string <| toStr 18 amount)
+        , ("id", Json.Encode.string id)
+        ]
+
+
 -- Route
 
 type Route
     = Index
     | Add
+    | Deposit String
 
 
 routeParser: Url.Parser.Parser (Route -> a) a
@@ -183,4 +207,19 @@ routeParser =
     Url.Parser.oneOf
         [ Url.Parser.map Index Url.Parser.top
         , Url.Parser.map Add (Url.Parser.s "add")
+        , Url.Parser.map Deposit (Url.Parser.s "deposit" </> Url.Parser.string)
         ]
+
+
+-- Function
+
+toStr : Int -> Float -> String
+toStr decimal val =
+    let
+        dotIndex =
+            case (String.fromFloat val |> String.reverse |> String.indexes "." |> List.head) of
+               Just idx -> idx
+               Nothing -> 0
+        plainVal = String.fromFloat val |> String.replace "." ""
+    in
+    plainVal ++ (String.repeat (decimal - dotIndex) "0")

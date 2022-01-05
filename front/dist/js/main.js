@@ -8,12 +8,14 @@ let accounts;
 let hardcoreBank;
 let erc777abi;
 
+const hardcoreBankAddress = '0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8';
+
 
 function createAccount(json) {
     // TODO: decimalsをjson.tokenContractAddressから取得する
     hardcoreBank.methods.createAccount(
         json.subject, json.description, json.tokenContractAddress,
-        String(json.targetAmount*1e18), String(json.monthlyRemittrance*1e18),)
+        json.targetAmount, json.monthlyRemittrance,)
         .send({'from': accounts[0]})
         .then(() => { app.ports.created.send("DONE")});
 }
@@ -68,6 +70,43 @@ async function _getAccounts() {
 app.ports.getAccounts.subscribe(getAccounts);
 
 
+async function _getTokenBalance(tokenContractAddress) {
+    let tokenContract = new web3.eth.Contract(erc777abi, tokenContractAddress);
+    let balance = await tokenContract.methods.balanceOf(accounts[0]).call();
+
+    app.ports.gotTokenBalance.send(balance);
+}
+
+function getTokenBalance(tokenContractAddress) {
+    _getTokenBalance(tokenContractAddress);
+}
+app.ports.getTokenBalance.subscribe(getTokenBalance);
+
+
+
+async function _deposit(data) {
+    // TODO: 謎のエラーを吐いて死ぬ
+    let tokenContract = new web3.eth.Contract(erc777abi, data.tokenContractAddress);
+    tokenContract.methods.send(hardcoreBankAddress, data.amount, web3.utils.fromDecimal(data.id))
+        .send({
+            'from': accounts[0],
+        })
+        .then((result) => {
+            app.ports.depositDone.send(true);
+        })
+        .catch((err) => {
+            app.ports.depositDone.send(false);
+        });
+}
+function deposit(data) {
+    _deposit(data);
+}
+app.ports.deposit.subscribe(deposit);
+
+
+
+
+
 function init() {
     _init();
 }
@@ -75,7 +114,7 @@ function init() {
 async function _init() {
     let resp_bank = await fetch('/abi/HardcoreBank.json');
     let abi = await resp_bank.json();
-    hardcoreBank = new web3.eth.Contract(abi, '0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8');
+    hardcoreBank = new web3.eth.Contract(abi, hardcoreBankAddress);
 
     let resp_token = await fetch('/abi/ERC777.json');
     erc777abi = await resp_token.json();

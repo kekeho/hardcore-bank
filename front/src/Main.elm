@@ -30,7 +30,7 @@ main =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init () url key =
-    ( Model key url Nothing [] Model.initAddfield , Cmd.none )
+    ( Model key url Nothing [] Model.initAddfield Model.initDepositField , Cmd.none )
 
 
 -- Ports
@@ -40,12 +40,19 @@ port created : (String -> msg) -> Sub msg
 port getAccounts : () -> Cmd msg
 port gotAccounts : (Json.Decode.Value -> msg) -> Sub msg
 
+port getTokenBalance : Address -> Cmd msg
+port gotTokenBalance : (String -> msg) -> Sub msg
+
+port deposit : Json.Encode.Value -> Cmd msg
+port depositDone : (Bool -> msg) -> Sub msg
+
 
 type Msg
     = UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
     | AddField AddFieldMsg
     | GotAccounts Json.Decode.Value
+    | DepositField DepositFieldMsg
 
 
 type AddFieldMsg
@@ -56,6 +63,13 @@ type AddFieldMsg
     | MonthlyRemittrance String
     | Submit
     | Created String
+
+
+type DepositFieldMsg
+    = GotTokenBalance String
+    | Amount String
+    | DepositSubmit String  -- id
+    | DepositDone Bool
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -74,6 +88,15 @@ update msg model =
                 cmd_ =  case Url.Parser.parse Model.routeParser url of
                     Just Index ->
                         getAccounts ()
+                    Just (Deposit id) ->
+                        let
+                            maybeAccount = 
+                                List.filter (\x -> x.id == id) model.accounts
+                                    |> List.head
+                        in
+                        case maybeAccount of
+                            Just account -> getTokenBalance account.contractAddress
+                            Nothing -> Cmd.none
                     _ ->
                         Cmd.none
             in
@@ -131,12 +154,65 @@ update msg model =
             , Cmd.none
             )
 
+        DepositField submsg ->
+            case submsg of
+                GotTokenBalance balance ->
+                    let
+                        depositField = model.depositField
+                        depositField_ = { depositField | tokenBalance = balance }
+                    in
+                    ( { model | depositField = depositField_ }
+                    , Cmd.none
+                    )
+                Amount amount ->
+                    let
+                        depositField = model.depositField
+                        floatAmount = String.toFloat amount
+                        depositField_ = case floatAmount of
+                            Just a ->
+                                { depositField | amountError = Nothing, value = a }
+                            Nothing ->
+                                { depositField | amountError = Just "Incorrect number." } 
+                    in
+                    ( { model | depositField = depositField_}
+                    , Cmd.none
+                    )
+                
+                DepositSubmit id ->
+                    let
+                        maybeAccount =
+                            List.filter (\a -> a.id == id) model.accounts |> List.head
+                    in
+                    case maybeAccount of
+                        Just account ->
+                            ( model
+                            , deposit <| depositEncoder account.contractAddress id model.depositField.value
+                            )
+                        Nothing ->
+                            (model, Cmd.none)
+                
+                DepositDone result ->
+                    let
+                        depositField = model.depositField  
+                    in
+                    if result then
+                        ( { model | depositField = initDepositField }
+                        , Nav.pushUrl model.key "/"
+                        )
+                    else
+                        ( { model | depositField = { depositField | result = result } }
+                        , Cmd.none
+                        )
+
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ created (\x -> AddField (Created x))
         , gotAccounts GotAccounts
+        , gotTokenBalance (\x -> DepositField (GotTokenBalance x))
+        , depositDone (\x -> DepositField (DepositDone x))
         ]
 
 
@@ -151,6 +227,15 @@ view model =
                 accountListView model
             Just Add ->
                 addView model
+            Just (Deposit id) ->
+                let
+                    maybeAccount =
+                        List.filter (\a -> a.id == id) model.accounts
+                            |> List.head
+                in
+                case maybeAccount of
+                    Just account -> depositView model account
+                    Nothing -> notFoundView
             Nothing ->
                 notFoundView
     in
@@ -207,8 +292,29 @@ accountListView model =
     }
 
 
-accountView : Account -> Html msg
+accountView : Account -> Html Msg
 accountView account =
+    div [ class "account-block" ]
+        [ p [ class "id" ] [ text <| "ID: " ++ account.id ]
+        , h2 [] [ text account.subject ]
+        , p [ class "description" ] [ text account.description ]
+        , div [ class "balance" ]
+            [ balanceView account
+            , div []
+                [ a [ href <| "/deposit/" ++ account.id ]
+                    [ button []
+                        [ text "Deposit" ]
+                    ]
+                , a [ href <| "/withdraw/" ++ account.id ]
+                    [ button [ onClick (DepositField (DepositSubmit account.id)) ]
+                        [ text "Withdraw" ]
+                    ]
+                ]
+            ]
+        ]
+
+balanceView : Account -> Html msg
+balanceView account =
     let
         current = case balanceToFloatStr 18 account.balance of
             Just x -> x
@@ -220,32 +326,25 @@ accountView account =
             Just x -> x
             Nothing -> "NA"
     in
-    div [ class "account-block" ]
-        [ p [ class "id" ] [ text <| "ID: " ++ account.id ]
-        , h2 [] [ text account.subject ]
-        , p [ class "description" ] [ text account.description ]
-        , div [ class "balance" ]
-            [ table []
-                [ tbody []
-                    [ tr []
-                        [ td []
-                            [ text "Balance:" ]
-                        , td [ class "val" ]
-                            [ span [ class "current" ] 
-                                [ text current ]
-                            , span [] [ text "/" ]
-                            , span [ class "target" ] [ text target ]
-                            , span [ class "token-symbol" ] [ text account.tokenSymbol ]
-                            ]
-                        ]
-                    , tr []
-                        [ td []
-                            [ text "Monthly Remittrance:" ]
-                        , td [ class "val" ]
-                            [ text monthly
-                            , span [ class "token-symbol" ] [ text account.tokenSymbol ]
-                            ]
-                        ]
+    table []
+        [ tbody []
+            [ tr []
+                [ td []
+                    [ text "Balance:" ]
+                , td [ class "val" ]
+                    [ span [ class "current" ] 
+                        [ text current ]
+                    , span [] [ text "/" ]
+                    , span [ class "target" ] [ text target ]
+                    , span [ class "token-symbol" ] [ text account.tokenSymbol ]
+                    ]
+                ]
+            , tr []
+                [ td []
+                    [ text "Monthly Remittrance:" ]
+                , td [ class "val" ]
+                    [ text monthly
+                    , span [ class "token-symbol" ] [ text account.tokenSymbol ]
                     ]
                 ]
             ]
@@ -327,6 +426,50 @@ addView model =
                             p [ class "error" ] [ text e ]
                     , button [ class "submit", onClick <| AddField Submit ]
                         [ text "Create" ]
+                    ]
+                ]
+            ]
+        ]
+    }
+
+
+depositView : Model -> Account -> Browser.Document Msg
+depositView model account =
+    let
+        tokenBalance = 
+            case balanceToFloatStr 18 model.depositField.tokenBalance of
+                Just x -> x
+                Nothing -> "NA"
+    in
+    { title = "Deposit"
+    , body =
+        [ div [ class "deposit" ]
+            [ div [ class "row" ]
+                [ div [ class "row-title" ]
+                    [ h1 []
+                        [ text <| "Deposit #" ++ account.id  ]
+                    ]
+                , div [ class "form" ]
+                    [ h2 [] [ text account.subject ]
+                    , p [] [ text account.description ]
+                    , balanceView account
+                    , div [ class "border" ]
+                        [ div [ class "token-balance" ]
+                            [ p []
+                                [ text <| account.tokenName ++ " balance: " ++ tokenBalance ++ " " ++ account.tokenSymbol ]
+                            ]
+                        , div [ class "send" ]
+                            [ label [ for "value" ] [ text "Amount: " ]
+                            , input 
+                                [ id "value", type_ "number"
+                                , step "0.00001"
+                                , value <| String.fromFloat model.depositField.value
+                                , onInput (\x -> DepositField (Amount x))
+                                ] []
+                            , button [ class "submit", onClick <| DepositField (DepositSubmit account.id) ]
+                                [ text "Send" ]
+                            ]
+                        ]
                     ]
                 ]
             ]
