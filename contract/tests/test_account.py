@@ -315,6 +315,10 @@ def test_withdraw_1():
     st.send(c.address, total_amount, convert.to_bytes(0), {'from': accounts[0]})
 
     c.withdraw(0, {'from': accounts[1]})
+
+    with brownie.reverts():
+        c.balanceOf(0, {'from': accounts[1]})  # disabled
+
     assert math.ceil(0.8*(total_amount//2)) + total_amount == st.balanceOf(accounts[1])
 
 

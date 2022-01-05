@@ -42,7 +42,7 @@ contract HardcoreBank is IERC777Recipient {
     Config[] private accountList;  // ID => account
     mapping(address => uint256[]) private userAccountList;  // user adderss => ID list
 
-    mapping(uint256 => RecvTransaction[]) private recvList;  // ID => RecvTransaction
+    mapping(uint256 => RecvTransaction[]) private recvList;  // ID => RecvTransaction[]
 
 
     constructor() {
@@ -221,6 +221,8 @@ contract HardcoreBank is IERC777Recipient {
         // send
         IERC777 tokenContract = IERC777(account.tokenContractAddress);
         tokenContract.send(account.owner, balance, bytes(""));
+        
+        disable(id);
     }
 
 
