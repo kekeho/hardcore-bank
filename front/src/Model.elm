@@ -200,6 +200,7 @@ type Route
     = Index
     | Add
     | Deposit String
+    | Withdraw String
 
 
 routeParser: Url.Parser.Parser (Route -> a) a
@@ -208,6 +209,7 @@ routeParser =
         [ Url.Parser.map Index Url.Parser.top
         , Url.Parser.map Add (Url.Parser.s "add")
         , Url.Parser.map Deposit (Url.Parser.s "deposit" </> Url.Parser.string)
+        , Url.Parser.map Withdraw (Url.Parser.s "withdraw" </> Url.Parser.string)
         ]
 
 

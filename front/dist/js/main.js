@@ -8,7 +8,7 @@ let accounts;
 let hardcoreBank;
 let erc777abi;
 
-const hardcoreBankAddress = '0xdF65d56a30Bc2d84a03e929eC1Fc3924824429a8';
+const hardcoreBankAddress = '0xA1174cA95E9B7cbA9c4cDD89f5Af2d077b18761d';
 
 
 function createAccount(json) {
@@ -104,7 +104,19 @@ function deposit(data) {
 app.ports.deposit.subscribe(deposit);
 
 
-
+async function _withdraw(id) {
+    hardcoreBank.methods.withdraw(id).send({'from': accounts[0]})
+    .then((result) => {
+        app.ports.withdrawDone.send(true);
+    })
+    .catch((err) => {
+        app.ports.withdrawDone.send(false);
+    });
+}
+function withdraw(id) {
+    _withdraw(id);
+}
+app.ports.withdraw.subscribe(withdraw);
 
 
 function init() {

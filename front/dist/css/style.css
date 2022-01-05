@@ -78,13 +78,13 @@ button.add {
 
 
 /* add */
-.add .row,.deposit .row {
+.add .row,.deposit .row,.withdraw .row {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
 }
 
-.add .form,.deposit .form {
+.add .form,.deposit .form,.withdraw .form {
     width: 100%;
     max-width: 30rem;
 
@@ -127,8 +127,13 @@ button.submit {
     cursor: pointer;
 }
 
+button.disabled {
+    cursor: not-allowed;
+    background-color: #4d4d4d;
+}
 
-.add .form p.error {
+
+p.error {
     top: -1.8rem;
     position: relative;
 
@@ -193,7 +198,7 @@ button.submit {
 
 
 /* Deposit */
-.deposit .form .border {
+.form .border {
     margin-top: 1rem;
 
     border-radius: 10px;
@@ -202,6 +207,6 @@ button.submit {
     padding: 1rem;
 }
 
-.deposit .form .border p {
+.form .border p {
     margin-top: 0;
 }

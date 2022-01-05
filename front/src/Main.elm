@@ -46,6 +46,9 @@ port gotTokenBalance : (String -> msg) -> Sub msg
 port deposit : Json.Encode.Value -> Cmd msg
 port depositDone : (Bool -> msg) -> Sub msg
 
+port withdraw : String -> Cmd msg  -- id
+port withdrawDone : (Bool -> msg) -> Sub msg
+
 
 type Msg
     = UrlRequested Browser.UrlRequest
@@ -53,6 +56,7 @@ type Msg
     | AddField AddFieldMsg
     | GotAccounts Json.Decode.Value
     | DepositField DepositFieldMsg
+    | WithdrawField WithdrawMsg
 
 
 type AddFieldMsg
@@ -70,6 +74,11 @@ type DepositFieldMsg
     | Amount String
     | DepositSubmit String  -- id
     | DepositDone Bool
+
+
+type WithdrawMsg
+    = Withdraw String  -- id
+    | WithdrawDone Bool 
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -204,6 +213,20 @@ update msg model =
                         , Cmd.none
                         )
 
+        WithdrawField submsg ->
+            case submsg of
+                Withdraw id ->
+                    ( model
+                    , withdraw id
+                    )
+                WithdrawDone result ->
+                    if result then
+                        ( model
+                        , Nav.pushUrl model.key "/"
+                        )
+                    else
+                        (model, Cmd.none)
+
 
 
 subscriptions : Model -> Sub Msg
@@ -213,6 +236,7 @@ subscriptions model =
         , gotAccounts GotAccounts
         , gotTokenBalance (\x -> DepositField (GotTokenBalance x))
         , depositDone (\x -> DepositField (DepositDone x))
+        , withdrawDone (\x -> WithdrawField (WithdrawDone x))
         ]
 
 
@@ -235,6 +259,15 @@ view model =
                 in
                 case maybeAccount of
                     Just account -> depositView model account
+                    Nothing -> notFoundView
+            Just (Model.Withdraw id) ->
+                let
+                    maybeAccount =
+                        List.filter (\a -> a.id == id) model.accounts
+                            |> List.head
+                in
+                case maybeAccount of
+                    Just account -> withdrawView model account
                     Nothing -> notFoundView
             Nothing ->
                 notFoundView
@@ -306,7 +339,7 @@ accountView account =
                         [ text "Deposit" ]
                     ]
                 , a [ href <| "/withdraw/" ++ account.id ]
-                    [ button [ onClick (DepositField (DepositSubmit account.id)) ]
+                    [ button []
                         [ text "Withdraw" ]
                     ]
                 ]
@@ -476,6 +509,46 @@ depositView model account =
         ]
     }
 
+
+
+withdrawView : Model -> Account -> Browser.Document Msg
+withdrawView model account =
+    let
+        isBig =
+            case BigInt.fromIntString account.targetAmount of
+                Just target ->
+                    case BigInt.fromIntString account.balance of
+                        Just balance ->
+                            BigInt.gte balance target
+                        Nothing -> False
+                Nothing -> False
+
+        submitButtonClass = 
+            if isBig then
+                [ class "submit", onClick <| WithdrawField <| Withdraw account.id ]
+            else
+                [ class "submit",  class "disabled" ]
+
+    in
+    { title = "Withdraw"
+    , body = 
+        [ div [ class "withdraw" ]
+            [ div [ class "row" ]
+                [ div [ class "row-title" ]
+                    [ h1 []
+                        [ text <| "Deposit #" ++ account.id  ]
+                    ]
+                , div [ class "form" ]
+                    [ h2 [] [ text account.subject ]
+                    , p [] [ text account.description ]
+                    , balanceView account
+                    , button submitButtonClass
+                        [ text "Withdraw" ]
+                    ]
+                ]
+            ]
+        ]
+    }
 
 
 
